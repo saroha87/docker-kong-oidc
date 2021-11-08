@@ -19,8 +19,7 @@ RUN set -ex \
     unzip \
     git \
   && apk --no-cache add --virtual .build-dependencies \
-    make \
-    gcc \
+    build-base \
     openssl-dev \
   \
 ## Install plugins
@@ -31,6 +30,7 @@ RUN set -ex \
  # Add Pluggable Compressors dependencies
     && luarocks install lua-ffi-zlib \
     && luarocks install penlight \
+    && luarocks install luaossl \
     && luarocks install kong-oidc-auth \
  # Build kong-oidc from forked repo because is not keeping up with lua-resty-openidc
     && curl -sL https://raw.githubusercontent.com/saroha87/kong-oidc/master/kong-oidc-${KONG_OIDC_VER}.rockspec | tee kong-oidc-${KONG_OIDC_VER}.rockspec | \
