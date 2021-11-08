@@ -8,7 +8,8 @@ ENV PACKAGES="openssl-devel kernel-headers gcc git openssh" \
     LUA_BASE_DIR="/usr/local/share/lua/5.1" \
     KONG_OIDC_VER="1.2.3-2" \
     LUA_RESTY_OIDC_VER="1.7.4-1" \
-    NGX_DISTRIBUTED_SHM_VER="1.0.2"
+    NGX_DISTRIBUTED_SHM_VER="1.0.2" \
+    JWT_PLUGIN_VERSION=1.1.0-1
 
 RUN set -ex \
   && apk --no-cache add \
@@ -30,8 +31,9 @@ RUN set -ex \
  # Add Pluggable Compressors dependencies
     && luarocks install lua-ffi-zlib \
     && luarocks install penlight \
+    && luarocks install kong-oidc-auth \
  # Build kong-oidc from forked repo because is not keeping up with lua-resty-openidc
-    && curl -sL https://raw.githubusercontent.com/revomatico/kong-oidc/v${KONG_OIDC_VER}/kong-oidc-${KONG_OIDC_VER}.rockspec | tee kong-oidc-${KONG_OIDC_VER}.rockspec | \
+    && curl -sL https://raw.githubusercontent.com/saroha87/kong-oidc/master/kong-oidc-${KONG_OIDC_VER}.rockspec | tee kong-oidc-${KONG_OIDC_VER}.rockspec | \
         sed -E -e 's/(tag =)[^,]+/\1 "master"/' -e "s/(lua-resty-openidc ~>)[^\"]+/\1 ${LUA_RESTY_OIDC_VER}/" > kong-oidc-${KONG_OIDC_VER}.rockspec \
     && luarocks build kong-oidc-${KONG_OIDC_VER}.rockspec \
  # Patch nginx_kong.lua for kong-oidc session_secret
@@ -132,6 +134,9 @@ x_oidc_cache_jwks_size = 128k\n\
 x_oidc_cache_introspection_size = 128k\n\
 \n\
 " "$TPL" \
+## jwt role and scope validation plugin
+    && curl -sL https://raw.githubusercontent.com/saroha87/kong-plugin-jwt-keycloak/master/kong-plugin-jwt-keycloak-${JWT_PLUGIN_VERSION}.rockspec | tee kong-plugin-jwt-keycloak-${JWT_PLUGIN_VERSION}.rockspec  \
+    && luarocks build kong-plugin-jwt-keycloak-${JWT_PLUGIN_VERSION}.rockspec \
 ## Cleanup
     && rm -fr *.rock* \
     && apk del .build-dependencies 2>/dev/null \
